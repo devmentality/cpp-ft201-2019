@@ -263,7 +263,6 @@ int main()
 	{
 		cout << lst[i] << endl;
 	}
-	Sleep(5000);
 	return 0;
 }
 
