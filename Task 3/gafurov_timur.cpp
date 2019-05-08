@@ -62,8 +62,8 @@ public:
 		Release();
 		if (this != &pointer)
 		{
-			object = pointer->object;
-			counter = pointer->counter;
+			object = pointer.object;
+			counter = pointer.counter;
 			if (object != nullptr)
 				(*counter)++;
 		}
@@ -75,10 +75,20 @@ public:
 		cout << "object: " << object << endl;
 		if (counter != nullptr)
 			cout << "counter: " << *counter << endl;
+		cout << "-------------------------" << endl;
 	}
 };
 
 int main()
 {
+	auto a = SmartPointer<int>(new int(1));
+	a.Dump();
+	auto b = SmartPointer<int>(new int(2));
+	a = b;
+	a.Dump();
+	b.Dump();
+	b.Release();
+	a.Dump();
+	b.Dump();
     return 0;
 }
