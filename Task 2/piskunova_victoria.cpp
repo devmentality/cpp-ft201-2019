@@ -4,10 +4,10 @@
 using namespace std;
 
 
-size_t GetPowOfTwo(int s)
+size_t GetPowOfTwo(int number)
 {
-	auto power = log2(s);
-	if (pow(2, power) >= s)
+	auto power = log2(number);
+	if (pow(2, power) >= number)
 		return pow(2, power);
 	return pow(2, power + 1);
 }
