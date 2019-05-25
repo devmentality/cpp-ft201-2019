@@ -25,10 +25,11 @@ public:
 			ref_cnt = NULL;
 			pntr = NULL;
 	}
+  }
 
 	T Get() {
-		return this->pntr;
-	}
+    return *pntr;
+  }
 
 	void Set(T *ptr) {
 		pntr = ptr;
@@ -45,8 +46,9 @@ public:
 				ref_cnt = NULL;
 				pntr = NULL;
 		}
+    }
 		if (this != &other_ptr) {
-			pointer = other_ptr.pntr;
+			pntr = other_ptr.pntr;
 			ref_cnt = other_ptr.ref_cnt;
 			++(*ref_cnt);
 		}
