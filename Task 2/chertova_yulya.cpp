@@ -2,7 +2,7 @@
 #include <iostream>
 #include <algorithm>
 
-#ifndef MALLOC_MY_ALLOCATOR_H
+#define MALLOC_MY_ALLOCATOR_H
 #define MALLOC_MY_ALLOCATOR_H
 
 using namespace std;
@@ -48,11 +48,11 @@ public:
             if (canMergeWithNextBlockToGetEnoughSpace(i, freeBlockIndex, num_bytes))
                 mergeTwoAdjacentBlocks(freeBlock, freeBlockIndex, i);
             if (isNextBlockFree(freeBlockIndex, i)) {
-                addThisRemainderToNextBlock(i, freeBlockIndex, freeBlock->size - num_bytes, result + num_bytes);
+                addThisRemainderToNextBlock(i, freeBlockIndex, freeBlock->size - num_bytes, (char*)result + num_bytes);
             }
             else if (freeBlock->size > num_bytes) {
                 MemoryControlBlock newBlock = MemoryControlBlock(freeBlock->size - num_bytes,
-                                                                 freeBlock->memoryPointer + num_bytes,
+                                                                 (char*)freeBlock->memoryPointer + num_bytes,
                                                                  true);
                 memoryBlocks.insert(memoryBlocks.begin() + freeBlockIndex + 1, newBlock);
                 freeBlocksIndexes.erase(freeBlocksIndexes.begin() + i);
@@ -116,7 +116,7 @@ private:
         }
         auto result = currentAddress;
         MemoryControlBlock block = MemoryControlBlock(num_bytes, result);
-        currentAddress += num_bytes;
+        currentAddress = num_bytes + (char*)currentAddress;
         sizeTaken += num_bytes;
         memoryBlocks.push_back(block);
         return result;
@@ -152,8 +152,35 @@ private:
         freeBlocksIndexes.erase(freeBlocksIndexes.begin() + i);
 
     }
+};
 
-    int main() {
+    struct littleTest {
+    int a;
+};
+
+struct test {
+    int a;
+    double b;
+};
+struct bigTest {
+    int a;
+    double b;
+    int c;
+};
+struct middleTest {
+    int a;
+    double b;
+    int c;
+};
+struct veryBigTest {
+    int a;
+    double b;
+    int c;
+    double d;
+    int e;
+};
+
+ int main() {
     MyAllocator alloc = MyAllocator();
     vector<void *> pointers;
     for (int i = 0; i < 5; ++i) {
@@ -185,7 +212,4 @@ private:
     alloc.Dump();
     pointers.push_back(alloc.alloc(sizeof(test)));
     alloc.Dump();
-
 }
-
-};
