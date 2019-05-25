@@ -17,7 +17,7 @@ public:
 	AVLNode(int k)
 	{
 		key = k;
-		height = 1; // âûñîòà ïîääåðåâà ñ êîðíåì 
+		height = 1; // высота поддерева с корнем
 		left = right = nullptr;
 	}
 
@@ -26,7 +26,7 @@ public:
 		return Height(right) - Height(left);
 	}
 
-	void CorrectHeight() // îáå âûñîòû â äî÷åðíèõ äîëæíû áûòü êîððåêòíûìè
+	void CorrectHeight() // обе высоты в дочерних должны быть корректными
 	{
 		auto left_height = Height(left);
 		auto right_height = Height(right);
@@ -164,7 +164,7 @@ public:
 
 	void Print()
 	{
-		// äåðåâî âûâîäèòñÿ ñëåâà íàïðàâî, ñâåðõó -- ïðàâîå ïîääåðåâî, ñíèçó ëåâîå
+		// дерево выводится слева направо, сверху -- правое поддерево, снизу левое
 		AVLNodeTools::PrintTreeLevel(root, 0);
 		std::cout << "------------------" << std::endl;
 
@@ -224,7 +224,7 @@ void test()
 
 int main()
 {
-	// îïåðàöèè âñòàâêè-óäàëåíèÿ-áàëàíñèðîâêè, ïå÷àòü âñåãî äåðåâà, òåñòîâàÿ ïðîãðàììà
+	// операции вставки-удаления-балансировки, печать всего дерева, тестовая программа
 	test();
 	return 0;
 }
