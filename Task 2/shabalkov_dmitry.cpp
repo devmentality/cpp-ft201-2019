@@ -1,4 +1,6 @@
-#include<iostream>
+#include <iostream>
+#include <map>
+
 using namespace std;
 
 int GetClosiestPowOfTwo(int number)
@@ -24,139 +26,155 @@ int PowOfTwo(int pow)
 class Node
 {
 public:
-	Node *left;
-	Node *right;
-	int level;
-	bool isEmpty;
-	bool isHaveChild;
-	void *pool;
-	
-	Node(int level, void *pool)
+	size_t Size;
+	void* Pointer;
+	bool IsEmpty = true;
+	Node* LeftChild;
+	Node* RightChild;
+	Node* Parent;
+
+	Node(size_t size)
 	{
-		this->level = level;
-		isEmpty = true;
-		isHaveChild = false;
-		this->pool = pool;
+		Pointer = malloc(size);
+		Size = size;
+	}
+
+	Node(Node* parent, bool isRightChild)
+	{
+		Parent = parent;
+		Size = parent->Size / 2;
+		if (isRightChild)
+		{
+			parent->RightChild = this;
+			Pointer = reinterpret_cast<void*>((size_t)parent->Pointer + Size);
+		}
+		else
+		{
+			parent->LeftChild = this;
+			Pointer = parent->Pointer;
+		}
+	}
+
+	bool IsNoChilds()
+	{
+		return (LeftChild == nullptr || LeftChild->IsEmpty) && (RightChild == nullptr || RightChild->IsEmpty);
 	}
 };
 
-class BinaryTree
+class Alloc
 {
 private:
-	size_t _size;
-	void *_pool;
-	int _countOfFull;
-	int _countOfHaveChild;
+	Node * _root;
+	map<size_t, map<void*, Node*>> _emptyCells;
+	map<void*, Node*> _usingCells;
+
 public:
-	Node *header;
 
-	BinaryTree(size_t size)
+	Alloc(size_t size)
 	{
-		int pow = GetClosiestPowOfTwo(size);
-		_size = PowOfTwo(pow);
-		_pool = malloc(_size);
-		_countOfFull = 0;
-		_countOfHaveChild = 0;
-		header = new Node(1, _pool);
-		RecursiveAdd(header, pow);
+		size_t powOfTwoSize = PowOfTwo(GetClosiestPowOfTwo(size));
+		_root = new Node(powOfTwoSize);
+		_emptyCells[powOfTwoSize][_root->Pointer] = _root;
 	}
 
-	void RecursiveAdd(Node* node, int maxlevel)
+	size_t GetCellSize(size_t size)
 	{
-		if (node->level == maxlevel)
-			return;
-		Add(node, node->level + 1);
-		RecursiveAdd(node->left, maxlevel);
-		RecursiveAdd(node->right, maxlevel);
-	}
-
-	void Add(Node* node, int level)
-	{
-		if (node->left != nullptr)
-			node->left = new Node(level, (void*)(GetRefOnMemory(node) + (size_t)_pool));
-		if (node->right != nullptr)
-			node->right = new Node(level, (void*)(GetRefOnMemory(node) + (size_t)_pool));
-	}
-
-	void* Find(Node* node, int level)
-	{
-		if (!node->isEmpty)
-			return (void*)nullptr;
-		if (node->level == level)
+		size_t min = 8;
+		while (min < size)
 		{
-			node->isEmpty = false;
-			_countOfFull += 1;
-			return node->pool;
+			min = min * 2;
 		}
-		if (node->left != nullptr)
-			Find(node->left, level);
-		if (node->right != nullptr)
-			Find(node->right, level);
-		node->isHaveChild = true;
-		_countOfHaveChild += 1;
+		return min;
 	}
 
-	void Remove(Node *node, int level)
+	Node* AllocCell(size_t size)
 	{
-		if (node->level == level)
-		{
-			node->isEmpty = true;
-			_countOfFull -= 1;
-			return;
-		}
-		if (node->left != nullptr)
-			Remove(node->left, level);
-		if(node->right != nullptr)
-			Remove(node->right, level);
-		node->isHaveChild = false;
-		_countOfHaveChild -= 1;
-	}
-
-	void CoutInfoForDump(Node *node)
-	{
-		cout << node << " " << node->isEmpty << " " << node->level << node->pool << " " << endl;
-		if (node->left != nullptr)
-			CoutInfoForDump(node->left);
-		if (node->right != nullptr)
-			CoutInfoForDump(node->right);
-	}
-
-	size_t GetRefOnMemory(Node * node)
-	{
-		int level = node->level;
-		int pow = GetClosiestPowOfTwo(_size);
-		return _size /((pow + 1) + _countOfFull * PowOfTwo(pow));
-	}
-};
-
-class Allocator
-{
-private:
-	BinaryTree * _tree;
-	size_t _size;
-public:
-	Allocator(size_t size)
-	{
-		_size = size;
-		_tree = new BinaryTree(_size);
+		auto first = _emptyCells[size].begin();
+		Node* node = (*first).second;
+		_emptyCells[size].erase(node->Pointer);
+		node->IsEmpty = false;
+		return node;
 	}
 
 	void* Allocate(size_t size)
 	{
-		return _tree->Find(_tree->header, size);
+		size_t sizeOfRightCell = GetCellSize(size);
+		size_t closiestFreeCellSize = 0;
+		for (auto cellSize = sizeOfRightCell; cellSize <= _root->Size; cellSize *= 2)
+		{
+			if (!_emptyCells[cellSize].empty())
+			{
+				closiestFreeCellSize = cellSize;
+				break;
+			}
+		}
+		if (closiestFreeCellSize == 0)
+			throw "No empty cells";
+
+		Node* cell = this->AllocCell(closiestFreeCellSize);
+		while (closiestFreeCellSize > sizeOfRightCell)
+		{
+			Node* nextCell = new Node(cell, true);
+			cell = new Node(cell, false);
+			cell->IsEmpty = false;
+			closiestFreeCellSize /= 2;
+			_emptyCells[closiestFreeCellSize][nextCell->Pointer] = nextCell;
+		}
+		_usingCells[cell->Pointer] = cell;
+		return cell->Pointer;
 	}
 
-	void Free(size_t size)
+	void Deallocate(void* pointer)
 	{
-		_tree->Remove(_tree->header, size);
+		Node* cell = _usingCells[pointer];
+		_usingCells.erase(pointer);
+		cell->IsEmpty = true;
+		_emptyCells[cell->Size][cell->Pointer] = cell;
+		while (cell->Parent != nullptr && cell->Parent->IsNoChilds())
+		{
+			size_t size = cell->Size;
+			cell = cell->Parent;
+			_emptyCells[size].erase(cell->RightChild->Pointer);
+			_emptyCells[size].erase(cell->LeftChild->Pointer);
+			cell->IsEmpty = true;
+			_emptyCells[cell->Size][cell->Pointer] = cell;
+			cell->RightChild = nullptr;
+			cell->LeftChild = nullptr;
+		}
 	}
 
 	void Dump()
 	{
-		_tree->CoutInfoForDump(_tree->header);
+		cout << "Allocator size : " << _root->Size << endl;
+		cout << "Using cells : " << endl;
+		for (auto first = _usingCells.begin(); first != _usingCells.end(); first++)
+			cout << "	Pointer : " << (*first).first << " Size : " << (*first).second->Size << endl;
+		cout << "Empty blocks : " << endl;
+		for (auto first = _emptyCells.begin(); first != _emptyCells.end(); first++)
+		{
+			if (!_emptyCells[(*first).first].empty())
+			{
+				cout << "Size : " << (*first).first << endl;
+				for (auto begin = _emptyCells[(*first).first].begin(); begin != _emptyCells[(*first).first].end(); begin++)
+					cout << "	Pointer : " << (*begin).first << endl;
+			}
+		}
 	}
 };
+
 int main()
 {
-	
+	Alloc* alloc = new Alloc(1000);
+	cout << "Empty allocator"<< '\n' << endl;
+	alloc->Dump();
+	void *pointer1 = alloc->Allocate(360);
+	cout << "360 bytes allocated" << '\n' << endl;
+	alloc->Dump();
+	void *pointer2 = alloc->Allocate(124);
+	cout << "124 more bytes allocated" << '\n' <<  endl;
+	alloc->Dump();
+	alloc->Deallocate(pointer1);
+	cout << "Pointer1 deallocated" << '\n' << endl;
+	alloc->Dump();
+	system("pause");
 }
