@@ -1,126 +1,167 @@
 #include "pch.h"
-#include <cmath>
-#include <iostream>
+#include<iostream>
+
 using namespace std;
 
-const unsigned int BLOCK_SIZE = 64;
 
-class BuddyAllocator {
+size_t GetPowOfTwo(int s)
+{
+	auto power = log2(s);
+	if (pow(2, power) >= s)
+		return pow(2, power);
+	return pow(2, power + 1);
+}
+
+class Block {
 public:
-	struct Header
+	unsigned int *pointer;
+	size_t size;
+	bool is_empty;
+	Block *next;
+	Block *previous;
+	Block *first_block;
+	Block *second_block;
+	Block *parent;
+
+	Block(size_t new_size, Block* parent)
 	{
-		bool free;
-		unsigned int level = 31;
-	};
+		pointer = (unsigned int*)malloc(size);
+		is_empty = true;
+		size = new_size;
+		parent = parent;
+		next = nullptr;
+		previous = nullptr;
+		first_block = nullptr;
+		second_block = nullptr;
+	}
 
-#pragma pack(push, 1)
-	struct Block : public Header
+	void Split()
 	{
-		struct LinkedBlock
-		{
-			Block *next;
-			Block *previous;
-		};
-		union
-		{
-			LinkedBlock linked_block;
-			char available_part[BLOCK_SIZE - sizeof(Header)];
-		};
-	};
-#pragma pack(pop)
-
-private:
-	unsigned int power;
-	unsigned int blocks_count;
-	Block *pool;
-	Block *blocks_list;
-
-	void free_link(Block &block) {
-		if (block.linked_block.next)
-			block.linked_block.next->linked_block.previous = block.linked_block.previous;
-		if (block.linked_block.previous)
-			block.linked_block.previous->linked_block.next = block.linked_block.next;
-		block.linked_block.next = block.linked_block.previous = &block;
+		auto size_half = size / 2;
+		first_block = new Block(size_half, this);
+		second_block = new Block(size_half, this);
+		second_block->next = next;
+		if (next != nullptr)
+			next->previous = second_block;
+		if (previous != nullptr)
+			previous->next = first_block;
+		first_block->previous = previous;
+		first_block->next = second_block;
+		second_block->previous = first_block;
+		next = nullptr;
+		previous = nullptr;
+		is_empty = false;
 	}
 
-	void insert(Block &source_block, Block &block) {
-		block.linked_block.next = source_block.linked_block.next;
-		block.linked_block.previous = &source_block;
-		if (source_block.linked_block.next)
-			source_block.linked_block.next->linked_block.previous = &block;
-		source_block.linked_block.next = &block;
+	~Block()
+	{
+		is_empty = true;
+		free(pointer);
+		first_block = nullptr;
+		second_block = nullptr;
+		previous = nullptr;
+		next = nullptr;
+		parent = nullptr;
 	}
 
-	Block &Buddy(Block &block) {
-		auto address = (unsigned int)(reinterpret_cast<unsigned int>(&block) + pow(2, block.level));
-		return *(reinterpret_cast<Block *>(address));
-	}
-
-public:
-	BuddyAllocator(size_t size) {
-		power = get_two_power(size);
-		blocks_count = pow(2, power) / BLOCK_SIZE;
-		pool = new Block[blocks_count + power + 1];
-		blocks_list = pool + blocks_count;
-		for (auto i = 0; i < power; i++) {
-			blocks_list[i].linked_block.next = &blocks_list[i];
-			blocks_list[i].linked_block.previous = &blocks_list[i];
-		}
-		auto &head = pool[0];
-		head.free = true;
-		head.level = power;
-		insert(blocks_list[power], head);
-	}
-
-	void *Alloc(size_t size) {
-		auto two_power = get_two_power(size + sizeof(Header));
-		auto i = two_power;
-		while (i < power && blocks_list[i].linked_block.next == &blocks_list[i])
-			i++;
-		if (i > power)
-			throw invalid_argument("Закончилась память");
-		auto &block = *blocks_list[i].linked_block.next;
-		free_link(block);
-		while (block.level > two_power) {
-			block.level -= 1;
-			auto &buddy = Buddy(block);
-			buddy.free = true;
-			buddy.level = block.level;
-			insert(blocks_list[buddy.level], buddy);
-		}
-		block.free = false;
-		return block.available_part;
-	}
-
-	void Free(void *ptr) {
-		auto &block = *reinterpret_cast<Block *>(
-			reinterpret_cast<Header *>(ptr) - 1);
-		if (&block < pool || &block >= pool + blocks_count)
-			throw invalid_argument("Такого указателя не существует");
-		block.free = true;
-		auto *block_pointer = &block;
-		for (block_pointer; block_pointer->level < power; block_pointer->level += 1) {
-			auto &buddy = Buddy(*block_pointer);
-			if (!buddy.free || buddy.level != block_pointer->level)
-				break;
-			free_link(buddy);
-			if (&buddy < block_pointer)
-				block_pointer = &buddy;
-		}
-		insert(blocks_list[block_pointer->level], *block_pointer);
+	void Unite()
+	{
+		previous = first_block->previous;
+		next = second_block->next;
+		first_block = second_block->next;
+		first_block->~Block();
+		second_block->~Block();
+		first_block = nullptr;
+		second_block = nullptr;
 	}
 };
 
-unsigned int get_two_power(int power)
-{
-	auto result = 1;
-	for (auto i = 0; i < power; i++)
-		result *= 2;
-	return result;
-}
 
-int main()
-{
+class BuddyAllocator {
+private:
+	size_t size;
+	Block* first_block;
+
+public:
+	BuddyAllocator(size_t new_size) {
+		size = new_size;
+		size_t index = GetPowOfTwo(new_size);
+		first_block = new Block(new_size, nullptr);
+	}
+
+	void Free(void *pointer) {
+		auto current_block = first_block;
+		while (current_block->pointer != pointer)
+			current_block = current_block->next;
+		while (true)
+		{
+			current_block->is_empty = true;
+			current_block = current_block->parent;
+			if (current_block == nullptr || !current_block->first_block->is_empty || !current_block->second_block->is_empty)
+				break;
+			else
+			{
+				if (current_block->first_block == first_block)
+					first_block = current_block;
+				current_block->Unite();
+			}
+		}
+	}
+
+	void* Alloc(size_t size) {
+		auto current_block = first_block;
+		if (current_block == nullptr)
+			throw invalid_argument("Закончилась память");
+		while (current_block->size != size || !current_block->is_empty)
+		{
+			if (!current_block->is_empty || log2(current_block->size) <= ceil(log2(size)))
+				current_block = current_block->next;
+
+			else {
+				current_block->Split();
+				if (current_block == first_block)
+					first_block = current_block->first_block;
+				current_block = current_block->first_block;
+			}
+			if (current_block == nullptr)
+				throw invalid_argument("Закончилась память");
+		}
+		current_block->is_empty = false;
+		return current_block->pointer;
+	}
+
+	void Dump() {
+		auto current_block = first_block;
+		while (current_block != nullptr) {
+			cout << "Адрес: " << current_block->pointer << "\n";
+			cout << "Размер: " << current_block->size << "\n";
+			if (current_block->is_empty)
+				cout << "Пустой блок" << "\n";
+			else
+				cout << "Занятый блок" << "\n";
+			current_block = current_block->next;
+		}
+	}
+};
+
+
+int main() {
 	setlocale(0, "rus");
-	return 0;
+	auto buddy_allocator = BuddyAllocator(512);
+	auto address = buddy_allocator.Alloc(64);
+	buddy_allocator.Alloc(128);
+	cout << "\n";
+	buddy_allocator.Dump();
+	cout << "___________" << "\n\n";
+	buddy_allocator.Free(address);
+	buddy_allocator.Dump();
+	cout << "___________" << "\n\n";
+	auto buddy_allocator2 = BuddyAllocator(32);
+	buddy_allocator2.Alloc(2);
+	auto address2 = buddy_allocator2.Alloc(2);
+	buddy_allocator2.Alloc(16);
+	buddy_allocator2.Dump();
+	cout << "___________" << "\n\n";
+	buddy_allocator2.Free(address2);
+	buddy_allocator2.Dump();
 }
