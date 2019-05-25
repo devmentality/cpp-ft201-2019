@@ -15,6 +15,13 @@ public:
 		reference_counter = new size_t(1);
 	}
 
+	SmartPointer()
+	{
+		reference_counter = new size_t();
+		*reference_counter = 0;
+		pointer = nullptr;
+	}
+
 	void Release()
 	{
 		if (pointer != nullptr)
@@ -26,6 +33,14 @@ public:
 				delete reference_counter;
 			}
 		}
+	}
+
+	void Set(T* pointer)
+	{
+		if (pointer != nullptr)
+			Release();
+		this->pointer = pointer;
+		reference_counter = new size_t(1);
 	}
 
 	T* Get()
@@ -45,7 +60,7 @@ public:
 
 	SmartPointer& operator=(SmartPointer& other)
 	{
-		if (*counter > 0) {
+		if (*reference_counter > 0) {
 			Release();
 		}
 		Release();
@@ -70,8 +85,27 @@ public:
 
 int main()
 {
-	auto one = new int(1);
-	auto smart_ptr1 = SmartPointer<int>(one);
-	smart_ptr1.Dump();
+	auto test = new int(1);
+	auto ptr1 = SmartPointer<int>(test);
+	ptr1.Dump();
+
+	SmartPointer<int> ptr2;
+	ptr2 = ptr1;
+	ptr1.Dump();
+	ptr2.Dump();
+
+	ptr2.Release();
+	ptr1.Dump();
+	ptr2.Dump();
+
+	SmartPointer<int> ptr3;
+	ptr3 = ptr1;
+	ptr3.Dump();
+	ptr1.Dump();
+	ptr3.Set(new int(5));
+	ptr3.Dump();
+	ptr1.Dump();
+
+	return 0;
 }
 
