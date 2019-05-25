@@ -1,4 +1,5 @@
 #include <iostream>
+#include <conio.h>
 
 
 template <class T>
@@ -22,9 +23,9 @@ public:
 		*counter_ptr = 1;
 	}
 
-	T* Get() const
+	T Get() const
 	{
-		return obj_ptr;
+		return *obj_ptr;
 	}
 
 	void Set(const SmartPtr& other)
@@ -50,8 +51,8 @@ public:
 
 	SmartPtr& operator=(const SmartPtr& other)
 	{
-		Set(other)
-			return *this;
+		Set(other);
+		return *this;
 	}
 
 	operator T* ()
@@ -68,4 +69,23 @@ public:
 	{
 		Release();
 	}
+
 };
+
+
+int main() {
+	int test = 42;
+	SmartPtr<int> int_smart_ptr = SmartPtr<int>(new int(test));
+	int val = int_smart_ptr.Get();
+	int val2 = *int_smart_ptr;
+
+	printf("%i, %i and %i are equal\n", test, val, val2);
+
+	int second_test_value = 7;
+	int_smart_ptr.Set(SmartPtr<int>(new int(second_test_value)));
+	printf("%i and %i are equal", second_test_value, (int)int_smart_ptr.Get());
+
+	int_smart_ptr.Release();
+	_getch();
+	return 0;
+}
