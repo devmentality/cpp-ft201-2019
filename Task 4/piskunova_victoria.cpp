@@ -3,6 +3,7 @@
 using namespace std;
 
 class Node {
+private:
 	unsigned char height;
 
 public:
@@ -18,7 +19,7 @@ public:
 		height = 1;
 	}
 
-	static unsigned char GetHeight(Node* pointer)
+	unsigned char GetHeight(Node* pointer)
 	{
 		if (pointer)
 			return pointer->height;
@@ -46,7 +47,7 @@ class AVLTree
 private:
 	Node* root;
 
-	static Node* BalanceNode(Node* pointer)
+	Node* BalanceNode(Node* pointer)
 	{
 		pointer->RestoreHeight();
 		auto balance_factor = pointer->GetBalanceFactor();
@@ -65,7 +66,7 @@ private:
 		return pointer;
 	}
 
-	static Node* RotateRight(Node* pointer)
+	Node* RotateRight(Node* pointer)
 	{
 		auto new_pointer = pointer->left;
 		pointer->left = new_pointer->right;
@@ -75,7 +76,7 @@ private:
 		return new_pointer;
 	}
 
-	static Node* RotateLeft(Node* pointer)
+	Node* RotateLeft(Node* pointer)
 	{
 		auto new_pointer = pointer->right;
 		pointer->right = new_pointer->left;
@@ -85,7 +86,7 @@ private:
 		return new_pointer;
 	}
 
-	static Node* InsertKey(Node* pointer, int key) {
+	Node* InsertKey(Node* pointer, int key) {
 		if (!pointer)
 			return new Node(key);
 		if (key < pointer->key)
@@ -95,14 +96,14 @@ private:
 		return BalanceNode(pointer);
 	}
 
-	static Node* FindMinKey(Node* pointer) {
+	Node* FindMinKey(Node* pointer) {
 		if (pointer->left)
 			FindMinKey(pointer->left);
 		else
 			return pointer;
 	}
 
-	static Node* DeleteMinKey(Node* pointer)
+	Node* DeleteMinKey(Node* pointer)
 	{
 		if (pointer->left == 0)
 			return pointer->right;
@@ -110,7 +111,7 @@ private:
 		return BalanceNode(pointer);
 	}
 
-	static Node* Delete(Node* pointer, int key)
+	Node* Delete(Node* pointer, int key)
 	{
 		if (!pointer)
 			return 0;
