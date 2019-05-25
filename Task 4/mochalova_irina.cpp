@@ -159,36 +159,6 @@ public:
 		return root;
 	}
 
-	void printTree(Node<TV>* node, int level)
-	{
-		int height = getTreeHeight();
-		int size = pow(2, height);
-
-		std::queue<Node<TV>*> elements;
-		elements.push(root);
-		
-		for (int i = 0; i < height; i++)
-		{
-			for (int j = 0; j < size / 2; j++)
-				std::cout << "   ";
-			for (int k = 0; k < pow(2, i); k++)
-			{
-				Node<TV>* e = elements.front();
-				elements.pop();
-				if (e != nullptr)
-				{
-					elements.push(e->leftChild);
-					elements.push(e->rightChild);
-				}
-				std::cout << " " << (e != nullptr ? std::to_string(e->value) : " ") << " ";
-				for (int j = 0; j < size - 1; j++)
-					std::cout << "   ";
-			}
-			std::cout << std::endl;
-			size = size / 2;
-		}
-	}
-
 	bool add(TV value)
 	{
 		Node<TV>* prev = root;
@@ -238,7 +208,7 @@ public:
 		return true;
 	}
 
-		bool remove(TV value)
+	bool remove(TV value)
 	{
 		Node<TV>* searchResult = searchNode(value);
 		if (searchResult == nullptr)
@@ -325,6 +295,57 @@ public:
 		return true;
 	}
 
+	void printTree()
+	{
+		int height = getTreeHeight();
+		int size = pow(2, height);
+
+		TV maxVal = getMaxNode(root);
+		int n = log10(maxVal) + 1;
+
+		std::queue<Node<TV>*> elements;
+		elements.push(root);
+
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < size / 2; j++)
+				for (int q = 0; q < n; q++)
+					std::cout << " ";
+			for (int k = 0; k < pow(2, i); k++)
+			{
+				Node<TV>* e = elements.front();
+				elements.pop();
+
+				if (e != nullptr)
+				{
+					elements.push(e->leftChild);
+					elements.push(e->rightChild);
+
+					std::cout << e->value;
+					for (int a = 0; a < n - log10(e->value) - 1; a++)
+						std::cout << " ";
+				}
+				else
+				{
+					for (int a = 0; a < n; a++)
+						std::cout << " ";
+				}
+				for (int j = 0; j < size - 1; j++)
+					for (int q = 0; q < n; q++)
+						std::cout << " ";
+			}
+			std::cout << std::endl;
+			size = size / 2;
+		}
+	}
+	
+	TV getMaxNode(Node<TV>* node)
+	{
+		if (node->rightChild == nullptr)
+			return node->value;
+		return getMaxNode(node->rightChild);
+	}
+
 	int getTreeHeight()
 	{
 		return getNodeHeight(root);
@@ -378,13 +399,13 @@ std::vector<TestCase> TestCases = {
 
 	TestCase(8, Add, true),
 	TestCase(9, Add, true),
-	TestCase(10, Add, true),
-	TestCase(11, Add, true),
-	TestCase(12, Add, true),
-	TestCase(13, Add, true),
+	TestCase(110, Add, true),
+	TestCase(111, Add, true),
+	TestCase(112, Add, true),
+	TestCase(113, Add, true),
 	TestCase(4, Add, true),
 	TestCase(6, Remove, true),
-	TestCase(10, Remove, true),
+	TestCase(110, Remove, true),
 
 };
 
@@ -423,7 +444,6 @@ int main()
 		else
 			std::cout << "\tBalance: OK" << std::endl;
 	}
-	bst.printTree(bst.getRoot(), 0);
-	getchar();
+	bst.printTree();
 	return 0;
 }
