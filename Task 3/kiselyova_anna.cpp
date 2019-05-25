@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include <iostream>
 
 using namespace std;
@@ -63,4 +63,45 @@ public:
 
 int main()
 {
+	auto value1 = 42;
+	auto ptr = SmartPtr<int>(new int (value1));
+	auto get1 = ptr.Get();
+	cout << "Test Get: " << get1 << endl;
+	if (ptr.object == nullptr)
+		cout << "Object: null" << endl;
+	else
+		cout << "Object: " << *ptr.object << endl;
+	if (value1 == get1)
+		cout << "OK" << endl;
+	else
+		cout << "NOT OK" << endl;	
+	cout << endl;
+
+	auto value2 = 43;
+	ptr.Set(new int(value2));
+	auto get2 = ptr.Get();
+	cout << "Test Set: " << get2 << endl;
+	if (ptr.object == nullptr)
+		cout << "Object: null" << endl;
+	else
+		cout << "Object: " << *ptr.object << endl;
+	if (value2 == get2)
+		cout << "OK" << endl;
+	else
+		cout << "NOT OK" << endl;
+	cout << endl;
+
+	ptr.Release();
+	cout << "Test Release: " << endl;
+	if (ptr.object == nullptr)
+		cout << "Object: null" << endl;
+	else
+		cout << "Object: " << *ptr.object << endl;
+	if (ptr.object == nullptr && ptr.counter == nullptr)
+		cout << "OK" << endl;
+	else
+		cout << "NOT OK" << endl;
+	cout << endl;
+
+	return 0;
 }
