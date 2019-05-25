@@ -1,4 +1,3 @@
-
 #include <cstring>
 #include <cstdint>
 #include <cassert>
@@ -72,7 +71,7 @@ public:
 		add(buddy, k - 1);
 		return block;
 	}
-	
+
 
 	Block * merge(Block * block)
 	{
@@ -144,7 +143,7 @@ public:
 
 		return new_block + 1;
 	}
-	
+
 	void Free(void * blk)
 	{
 		Block * new_block = (Block *)((uint8_t *)blk - sizeof(Block));
@@ -163,6 +162,13 @@ public:
 	void Dump()
 	{
 		cout << count << "\n";
+		for (int i = 0; i < 32; ++i) {
+			if (free_Array[i] != NULL)
+			{
+				cout << "size" << free_Array[i]->size << " ";
+			}
+		}
+		cout << "\n";
 	}
 };
 
@@ -173,13 +179,13 @@ int main(int argc, char * argv[])
 	int	pendingBlk;
 	BuddyAllocator alloc = BuddyAllocator(2097152);
 	alloc.Dump();
-	
+
 	void* g1 = alloc.Alloc(100);
 	alloc.Dump();
 	
 	void* g2 = alloc.Alloc(33);
 	alloc.Dump();
-	
+
 	void* g3 = alloc.Alloc(16);
 	void* g4 = alloc.Alloc(8);
 	alloc.Dump();
@@ -192,7 +198,8 @@ int main(int argc, char * argv[])
 	alloc.Free(g3);
 	alloc.Free(g2);
 	alloc.Dump();
-	Sleep(5000);
 	
+	Sleep(5000);
+
 }
 
